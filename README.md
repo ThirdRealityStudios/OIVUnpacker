@@ -86,8 +86,9 @@ You may not redestribute this program.
 One key is always for one user (real person).
 Keys can be locked if abuse can be betrayed,
 e.g. if the key is used suspiciously often (meaning much more than average in a short period of time).
+Anyway, don't worry if you activate it e.g. 10 times a month but do not exagerrate.
 
-## Bugs
+## Bugs and questions
 
-If you encounter any bugs,
-you can send a message on Discord or YouTube (see YouTube link when starting the program in your console).
+If you encounter any bugs or have questions,
+you can send a message on Discord (https://discord.gg/YHyBRhuf) or YouTube (see YouTube link when starting the program in your console).
