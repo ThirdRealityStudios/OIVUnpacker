@@ -82,7 +82,10 @@ I do not claim any rights to the program OpenIV.
 
 The use of this program is at your own risk without any liability for damages.
 Make sure to create backups before using this program.
-You may not decompile or redestribute this program.
+You may not redestribute this program.
+One key is always for one user (real person).
+Keys can be locked if abuse can be betrayed,
+e.g. if the key is used suspiciously often (meaning more than average).
 
 ## Bugs
 
