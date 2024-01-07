@@ -17,7 +17,7 @@
 
 // gcc ./main.c ./list.c ./subroutine.c ./stringHelper.c ./fileHelper.c ./xmlHelper.c ./directoryHelper.c ./reporter.c ./test/stringHelperTest.c ./test/listTest.c ./test/directoryHelperTest.c ./test/xmlHelperTest.c -o main.exe
 
-char *programTitle = ".oiv Extractor for OpenIV";
+char *programTitle = "OIV Unpacker for OpenIV";
 char *author = "https://www.youtube.com/@diesunddasDE";
 char *assemblyXmlFilename = NULL;
 char *assemblyXmlFilepath = NULL; // <- free() this variable after use later!
@@ -59,9 +59,9 @@ void testModules()
 
 int main(int argc, char **argv)
 {
-	// Example usage: ./main.exe "./Setup 1.oiv" "./subfolder/anotherone/"
+	// Example usage: ./main.exe "./Setup 1.oiv" "./myModpack/"
 	
-	testModules();
+	// testModules(); // Only uncomment if there are errors.
 	
 	welcomeUser(programTitle, author);
 	assertCorrectMainArgs(argc, argv);
@@ -71,6 +71,7 @@ int main(int argc, char **argv)
 
 	assertExistingOIVArchive(oivArchiveFilepath);
 
+	// Ignore comment, only relevant for dev
 	// ./7z.exe x -y ./trash/test.oiv -o"C:\Users\Konto\Desktop\OIVReader\trash\"
 	
 	char *temp0 = safeStrCat("7z.exe x -y \"", oivArchiveFilepath);

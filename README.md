@@ -67,3 +67,24 @@ Automatically,
 it will create a .oiv installation archive for you.
 After that,
 you open the program OpenIV and simply click on install.
+
+## Activation
+
+You can activate the program by simply starting it in your Windows console.
+The program will prompt you to enter a key (internet required).
+Every key is valid for 2 years after buying.
+
+## Legal notice
+
+This program is not affiliated or to associate with the OpenIV project.
+It is only a program that should enhance the use and modding with OpenIV.
+I do not claim any rights to the program OpenIV.
+
+The use of this program is at your own risk without any liability for damages.
+Make sure to create backups before using this program.
+You may not decompile or redestribute this program.
+
+## Bugs
+
+If you encounter any bugs,
+you can send a message on Discord or YouTube (see YouTube link when starting the program in your console).
