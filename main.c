@@ -91,7 +91,7 @@ void testModules()
 /// @brief The entry point of this program.
 ///		   The program assumes the user account is located on the C: drive.
 ///		   If not, the program will not work.
-int main(int argc, char **argv)
+int main(int argc, char **argv) // TODO Save activation file in %appdata%/Local/ThirdRealityStudios/OIVPacker
 {
 	// Example usage: ./main.exe "./Setup 1.oiv" "./myModpack/"
 	
