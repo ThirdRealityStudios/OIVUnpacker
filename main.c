@@ -14,6 +14,7 @@
 #include "test/listTest.h"
 #include "test/directoryHelperTest.h"
 #include "test/xmlHelperTest.h"
+#include <winbase.h>
 
 // gcc ./main.c ./list.c ./subroutine.c ./stringHelper.c ./fileHelper.c ./xmlHelper.c ./directoryHelper.c ./reporter.c ./test/stringHelperTest.c ./test/listTest.c ./test/directoryHelperTest.c ./test/xmlHelperTest.c -o main.exe
 
@@ -97,12 +98,10 @@ int main(int argc, char **argv)
 
 	// Will copy all files of every <archive> tag to their corresponding representative GTA IV folder after unpacking.
 	processArchiveXml(assemblyXmlFileContent, destinationRealPath);
-	puts("");
 	
 	// Will copy all files of every remaining <add> tag (after processing the <archive> tags)
 	// to their corresponding representative GTA IV folder (so kinda bit like processArchiveXml() before).
 	processRemainingAddXml(assemblyXmlFileContent, destinationRealPath);
-	puts("");
 	
 	free(assemblyXmlFilepath);
 	assemblyXmlFilepath = NULL;

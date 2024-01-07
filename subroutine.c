@@ -115,9 +115,7 @@ void processAddTagXmlString(char *addXmlString, char *destinationRealPath, char 
 	reportIfNULL(sourceFilePath, "sourceFilePath", "processRemainingAddXml()", "safeStrCat()");
 	free(temp);
 	temp = NULL;
-		
-	fprintf(stdout, "source filepath: %s\n", sourceFilePath);
-		
+	
 	temp = safeStrCat(destinationRealPath, "\\");
 	reportIfNULL(temp, "temp", "processRemainingAddXml()", "safeStrCat()");
 		
@@ -129,8 +127,6 @@ void processAddTagXmlString(char *addXmlString, char *destinationRealPath, char 
 	// Calculating the destination directory of your representative GTA IV folder (so removing the file name inclusive extension here).
 	destinationDirectory = cutString(destinationFilePath, lastIndexOf(destinationFilePath, "\\", 0), strlen(destinationFilePath) - 1);
 	reportIfNULL(destinationDirectory, "destinationDirectory", "processRemainingAddXml()", "cutString()");
-		
-	fprintf(stdout, "destination filepath: %s\n", destinationFilePath);
 
 	// Make sure folder does exist before moving.
 	int successMkdir = _mkdir_safe(destinationDirectory);
@@ -153,6 +149,8 @@ void processAddTagXmlString(char *addXmlString, char *destinationRealPath, char 
 
 			fgets(decision, 3, stdin);
 			
+			fputs("\n", stdout);
+			
 			// Bugfix:
 			// "Remove" line-break which was also read, when entering "y" or "n"
 			// (which is in reality then "y\n" or "n\n", but not for "yr" or "nr" because it will get replaced by '\0' in third index).
@@ -160,13 +158,9 @@ void processAddTagXmlString(char *addXmlString, char *destinationRealPath, char 
 				decision[1] = 0;
 			
 			fflush(stdin);
-			
-			fprintf(stdout, "My decision was: %s\n", decision);
-			
+
 			if(equals(decision, "y"))
 			{
-				fprintf(stdout, "Executing y\n", decision);
-				
 				remove(destinationFilePath);
 				rename(sourceFilePath, destinationFilePath); // if it still doesn't work here, I don't care..
 
@@ -174,22 +168,16 @@ void processAddTagXmlString(char *addXmlString, char *destinationRealPath, char 
 			}
 			else if(equals(decision, "n"))
 			{
-				fprintf(stdout, "Executing n\n", decision);
-
 				break;
 			}
 			else if(equals(decision, "nr"))
 			{
-				fprintf(stdout, "Executing nr\n", decision);
-				
 				PROJECT_OIV_remember_decicision = -1;
 	
 				break;
 			}
 			else if(equals(decision, "yr"))
 			{
-				fprintf(stdout, "Executing yr\n", decision);
-				
 				PROJECT_OIV_remember_decicision = 1;
 			
 				remove(destinationFilePath);
@@ -239,8 +227,6 @@ void processArchiveXml(char *assemblyXmlFileContent, char *destinationRealPath)
 	char *archivePath = NULL;
 	char *destinationArchivePath = NULL;
 	char *temp = NULL;
-	
-	int successMkdir = 0;
 
 	for(int i = 0; i < sizeOf(copyArchiveInstructions); i++)
 	{
@@ -251,13 +237,7 @@ void processArchiveXml(char *assemblyXmlFileContent, char *destinationRealPath)
 		destinationArchivePath = safeStrCat(temp, archivePath);
 		free(temp);
 
-		successMkdir = _mkdir_safe(destinationArchivePath);
-		
-		if(successMkdir != 0)
-		{
-			fprintf(stderr, "Could not create directory for directory path: %s\n", destinationArchivePath);
-			fprintf(stderr, "Reason: %d\n", successMkdir);
-		}
+		_mkdir_safe(destinationArchivePath);
 		
 		List *copyAddInstructions = getStringsByTagName(archiveXmlString, "add");
 		
