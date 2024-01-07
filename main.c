@@ -15,6 +15,7 @@
 #include "test/directoryHelperTest.h"
 #include "test/xmlHelperTest.h"
 #include <winbase.h>
+#include <Lmcons.h>
 
 // gcc ./main.c ./list.c ./subroutine.c ./stringHelper.c ./fileHelper.c ./xmlHelper.c ./directoryHelper.c ./reporter.c ./test/stringHelperTest.c ./test/listTest.c ./test/directoryHelperTest.c ./test/xmlHelperTest.c -o main.exe
 
@@ -26,7 +27,8 @@ char *contentFolderPath = NULL; // <- same for this variable later!
 char *oivArchiveFilepath = NULL;
 char *destinationRealPath = NULL;
 
-enum farben { test = -2, testf, foo = -7, nice, geil, kurwa };
+char *userName = NULL; // The current user name running this program.
+char *appdataDirectoryPath = NULL; // The %appdata% folder, assumed on C: drive.
 
 void init(int argc, char **argv)
 {
@@ -45,6 +47,34 @@ void init(int argc, char **argv)
 	char *temp = safeStrCat("\\", assemblyXmlFilename);
 	assemblyXmlFilepath = safeStrCat(destinationRealPath, temp);
 	free(temp);
+	temp = NULL;
+	
+	DWORD maxUserNameLength = UNLEN+1; // inclusive NULL-byte.
+	
+	userName = calloc(sizeof(char), maxUserNameLength);
+	
+	int userNameRetrievalSuccess = GetUserNameA(userName, &maxUserNameLength) != 0;
+	
+	// The user name is important for the runtime.
+	// Hence, without, the program will exit.
+	if(!userNameRetrievalSuccess)
+	{
+		fputs("Could not retrieve local user name (Hence, exiting now..)\n", stdout);
+		
+		exit(EXIT_FAILURE);
+	}
+	
+	// Only used for temporary string calculations to determine the %appdata% directory path..
+	temp = safeStrCat("C:\\Users\\", userName);
+	
+	// This is the usual %appdata% directory path now (on 99.99% of all Windows systems).
+	appdataDirectoryPath = safeStrCat(temp, "\\AppData");
+	
+	free(temp);
+	temp = NULL;
+	
+	fprintf(stdout, "User name: %s\n", userName);
+	fprintf(stdout, "AppData directory path: %s\n", appdataDirectoryPath);
 }
 
 void testModules()
@@ -58,6 +88,9 @@ void testModules()
 	testXmlHelper();
 }
 
+/// @brief The entry point of this program.
+///		   The program assumes the user account is located on the C: drive.
+///		   If not, the program will not work.
 int main(int argc, char **argv)
 {
 	// Example usage: ./main.exe "./Setup 1.oiv" "./myModpack/"
@@ -102,6 +135,12 @@ int main(int argc, char **argv)
 	// Will copy all files of every remaining <add> tag (after processing the <archive> tags)
 	// to their corresponding representative GTA IV folder (so kinda bit like processArchiveXml() before).
 	processRemainingAddXml(assemblyXmlFileContent, destinationRealPath);
+	
+	free(appdataDirectoryPath);
+	appdataDirectoryPath = NULL;
+	
+	free(userName);
+	userName = NULL;
 	
 	free(assemblyXmlFilepath);
 	assemblyXmlFilepath = NULL;
