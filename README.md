@@ -85,7 +85,7 @@ Make sure to create backups before using this program.
 You may not redestribute this program.
 One key is always for one user (real person).
 Keys can be locked if abuse can be betrayed,
-e.g. if the key is used suspiciously often (meaning more than average).
+e.g. if the key is used suspiciously often (meaning much more than average in a short period of time).
 
 ## Bugs
 
