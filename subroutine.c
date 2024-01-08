@@ -133,7 +133,7 @@ void processAddTagXmlString(char *addXmlString, char *destinationRealPath, char 
 	
 	// Moving files from sourceFilePath to destinationFilePath from here..
 	int successMoveFile = rename(sourceFilePath, destinationFilePath);
-	
+
 	// If moving was not successful, ask the user what to do?
 	if(PROJECT_OIV_remember_decicision == 0 && successMoveFile == -1)
 	{

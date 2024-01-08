@@ -16,8 +16,9 @@
 #include "test/xmlHelperTest.h"
 #include <winbase.h>
 #include <Lmcons.h>
+#include "internetHelper.h"
 
-// gcc ./main.c ./list.c ./subroutine.c ./stringHelper.c ./fileHelper.c ./xmlHelper.c ./directoryHelper.c ./reporter.c ./test/stringHelperTest.c ./test/listTest.c ./test/directoryHelperTest.c ./test/xmlHelperTest.c -o main.exe
+// gcc ./main.c ./list.c ./subroutine.c ./stringHelper.c ./fileHelper.c ./xmlHelper.c ./directoryHelper.c ./reporter.c ./internetHelper.c ./test/stringHelperTest.c ./test/listTest.c ./test/directoryHelperTest.c ./test/xmlHelperTest.c -o main.exe -lws2_32
 
 char *programTitle = "OIV Unpacker for OpenIV";
 char *author = "https://www.youtube.com/@diesunddasDE";
@@ -29,6 +30,7 @@ char *destinationRealPath = NULL;
 
 char *userName = NULL; // The current user name running this program.
 char *appdataDirectoryPath = NULL; // The %appdata% folder, assumed on C: drive.
+char *localDirectoryPath = NULL; // The directory path of %appdata%/Local/
 
 void init(int argc, char **argv)
 {
@@ -68,13 +70,35 @@ void init(int argc, char **argv)
 	temp = safeStrCat("C:\\Users\\", userName);
 	
 	// This is the usual %appdata% directory path now (on 99.99% of all Windows systems).
-	appdataDirectoryPath = safeStrCat(temp, "\\AppData");
+	appdataDirectoryPath = safeStrCat(temp, "\\AppData\\");
+	
+	localDirectoryPath = safeStrCat(appdataDirectoryPath, "Local\\");
 	
 	free(temp);
 	temp = NULL;
 	
 	fprintf(stdout, "User name: %s\n", userName);
 	fprintf(stdout, "AppData directory path: %s\n", appdataDirectoryPath);
+	fprintf(stdout, "Local directory path: %s\n", localDirectoryPath);
+	
+	time_t liveTime = getLiveTime();
+	
+	if(liveTime == -1)
+	{
+		fprintf(stderr, "Could not build a connection to the internet (Hence, exiting now..)\n");
+		
+		exit(EXIT_FAILURE);
+	}
+	
+	struct tm *tm_liveTime = localtime(&liveTime);
+	
+	
+	
+	char liveTimeString[100];
+	
+	strftime(liveTimeString, 100, "%d.%m.%Y %H:%M:%S", tm_liveTime);
+	
+	printf("Live time: %s\n", liveTimeString == 0 ? "Fehler" : liveTimeString);
 }
 
 void testModules()
@@ -135,6 +159,9 @@ int main(int argc, char **argv) // TODO Save activation file in %appdata%/Local/
 	// Will copy all files of every remaining <add> tag (after processing the <archive> tags)
 	// to their corresponding representative GTA IV folder (so kinda bit like processArchiveXml() before).
 	processRemainingAddXml(assemblyXmlFileContent, destinationRealPath);
+	
+	free(localDirectoryPath);
+	localDirectoryPath = NULL;
 	
 	free(appdataDirectoryPath);
 	appdataDirectoryPath = NULL;
