@@ -17,6 +17,7 @@
 #include <winbase.h>
 #include <Lmcons.h>
 #include "internetHelper.h"
+#include "directoryHelper.h"
 
 // gcc ./main.c ./list.c ./subroutine.c ./stringHelper.c ./fileHelper.c ./xmlHelper.c ./directoryHelper.c ./reporter.c ./internetHelper.c ./test/stringHelperTest.c ./test/listTest.c ./test/directoryHelperTest.c ./test/xmlHelperTest.c -o main.exe -lws2_32
 
@@ -32,25 +33,92 @@ char *userName = NULL; // The current user name running this program.
 char *appdataDirectoryPath = NULL; // The %appdata% folder, assumed on C: drive.
 char *localDirectoryPath = NULL; // The directory path of %appdata%/Local/
 
-void init(int argc, char **argv)
-{
-	argv++;
-	
-	oivArchiveFilepath = *argv++;
-	destinationRealPath = *argv;
-	
-	oivArchiveFilepath = _fullpath(NULL, oivArchiveFilepath, 0);
-	destinationRealPath = _fullpath(NULL, destinationRealPath, 0);
+char *temp = NULL; // for random, unrelated string operations.
 
-	// Create path to "content" folder
-	// and filepath for file "assembly.xml" inside "content" folder
-	contentFolderPath = safeStrCat(destinationRealPath, "\\content\\");
-	assemblyXmlFilename = "assembly.xml";
-	char *temp = safeStrCat("\\", assemblyXmlFilename);
-	assemblyXmlFilepath = safeStrCat(destinationRealPath, temp);
-	free(temp);
-	temp = NULL;
+/// @brief Checks whether the hardcoded product key is still valid via internet.
+/// @param localDirectoryPath Path to your Local folder in %appdata% (a program folder will be created to save the entered key).
+void activateProduct(char *localDirectoryPath)
+{
+	char *oivtoolsDirectory = safeStrCat(localDirectoryPath, "\\OIVTools\\");
 	
+	_mkdir_safe(oivtoolsDirectory);
+	
+	char productKeyHardcoded[] = "CD87T-HFP4C-V7X7H-8VY68-W7D7M";
+
+	char *productKeyEntered = calloc(sizeof(productKeyHardcoded), 1);
+	
+	// Product is valid for 1 year.
+	struct tm *productActivationLossDateTm = calloc(sizeof(struct tm), 1);
+	productActivationLossDateTm -> tm_mday = 30;
+	productActivationLossDateTm -> tm_mon = 1; // Feb
+	productActivationLossDateTm -> tm_year = 2023 - 1900; // Always subtract 1900 from the actual year.
+	productActivationLossDateTm -> tm_hour = 23;
+	productActivationLossDateTm -> tm_min = 59;
+
+	do
+	{
+		fputs("Please enter your product key below for activation (internet required):\n> ", stdout);
+		fgets(productKeyEntered, sizeof(productKeyHardcoded), stdin);
+		fflush(stdin);
+		
+		fputs("\n", stdout);
+		
+		if(equals(productKeyEntered, productKeyHardcoded))
+		{
+			time_t liveTime = getLiveTime();
+
+			time_t productActivationLossDate = mktime(productActivationLossDateTm);
+			
+			if(liveTime == -1) // could not fetch the current internet live time (most likely user has no internet or NTP server is down?)
+			{
+				fputs("Activation failed. Please check your internet connection!\n", stdout);
+				
+				continue; // Try to ask for the key again (user needs to establish a internet connection manually before doing again of course).
+			}
+			
+			// See if the product key is still valid.
+			// If invalid, the customer needs to buy a new software with the key together.
+			if(liveTime <= productActivationLossDate)
+			{
+				fputs("Activation successful. Thank you for choosing OIVUnpacker!\n", stdout);
+				
+				// TODO Save product key on HDD for future, so no need to ask again.
+			}
+			else
+			{
+				fputs("Activation failed.\n"
+					  "Your product key has expired (1 year is over).\n"
+					  "Please buy a new licensed software, e.g. write a simple message via Discord.\n"
+					  "The Discord server is: https://discord.gg/tMkHnXVT", stdout);
+			}
+			
+			free(productKeyEntered);
+			productKeyEntered = NULL;
+			
+			free(oivtoolsDirectory);
+			oivtoolsDirectory = NULL;
+
+			break;
+		}
+		
+		fputs("Your product key entered was invalid.\n", stdout);
+	}
+	while(1);
+
+	char productActivationLossDateFormatted[100];
+	
+	strftime(productActivationLossDateFormatted, sizeof(productActivationLossDateFormatted), "%d.%m.%Y %H:%M", productActivationLossDateTm);
+	
+	fprintf(stdout, "Your product key is valid until: %s\n", productActivationLossDateFormatted);
+	
+	free(productActivationLossDateTm);
+	productActivationLossDateTm = NULL;
+	
+	
+}
+
+void preInit()
+{
 	DWORD maxUserNameLength = UNLEN+1; // inclusive NULL-byte.
 	
 	userName = calloc(sizeof(char), maxUserNameLength);
@@ -76,29 +144,30 @@ void init(int argc, char **argv)
 	
 	free(temp);
 	temp = NULL;
+}
+
+void init(int argc, char **argv)
+{
+	argv++;
 	
+	oivArchiveFilepath = *argv++;
+	destinationRealPath = *argv;
+	
+	oivArchiveFilepath = _fullpath(NULL, oivArchiveFilepath, 0);
+	destinationRealPath = _fullpath(NULL, destinationRealPath, 0);
+
+	// Create path to "content" folder
+	// and filepath for file "assembly.xml" inside "content" folder
+	contentFolderPath = safeStrCat(destinationRealPath, "\\content\\");
+	assemblyXmlFilename = "assembly.xml";
+	temp = safeStrCat("\\", assemblyXmlFilename);
+	assemblyXmlFilepath = safeStrCat(destinationRealPath, temp);
+	free(temp);
+	temp = NULL;
+
 	fprintf(stdout, "User name: %s\n", userName);
 	fprintf(stdout, "AppData directory path: %s\n", appdataDirectoryPath);
 	fprintf(stdout, "Local directory path: %s\n", localDirectoryPath);
-	
-	time_t liveTime = getLiveTime();
-	
-	if(liveTime == -1)
-	{
-		fprintf(stderr, "Could not build a connection to the internet (Hence, exiting now..)\n");
-		
-		exit(EXIT_FAILURE);
-	}
-	
-	struct tm *tm_liveTime = localtime(&liveTime);
-	
-	
-	
-	char liveTimeString[100];
-	
-	strftime(liveTimeString, 100, "%d.%m.%Y %H:%M:%S", tm_liveTime);
-	
-	printf("Live time: %s\n", liveTimeString == 0 ? "Fehler" : liveTimeString);
 }
 
 void testModules()
@@ -117,10 +186,14 @@ void testModules()
 ///		   If not, the program will not work.
 int main(int argc, char **argv) // TODO Save activation file in %appdata%/Local/ThirdRealityStudios/OIVPacker
 {
+	preInit();
+	
 	// Example usage: ./main.exe "./Setup 1.oiv" "./myModpack/"
 	
+	activateProduct(localDirectoryPath); // Activation check efore anything else.
+
 	// testModules(); // Only uncomment if there are errors.
-	
+
 	welcomeUser(programTitle, author);
 	assertCorrectMainArgs(argc, argv);
 	// From here, it is safe to use main args now as intended.
@@ -131,7 +204,7 @@ int main(int argc, char **argv) // TODO Save activation file in %appdata%/Local/
 
 	// Ignore comment, only relevant for dev
 	// ./7z.exe x -y ./trash/test.oiv -o"C:\Users\Konto\Desktop\OIVReader\trash\"
-	
+
 	char *temp0 = safeStrCat("7z.exe x -y \"", oivArchiveFilepath);
 	char *temp1 = safeStrCat(temp0, "\" -o\"");
 	free(temp0);
