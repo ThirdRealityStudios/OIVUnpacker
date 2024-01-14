@@ -39,71 +39,92 @@ char *temp = NULL; // for random, unrelated string operations.
 /// @param localDirectoryPath Path to your Local folder in %appdata% (a program folder will be created to save the entered key).
 void activateProduct(char *localDirectoryPath)
 {
-	char *oivtoolsDirectory = safeStrCat(localDirectoryPath, "\\OIVTools\\");
+	char *oivtoolsDirectory = safeStrCat(localDirectoryPath, "OIVTools\\");
 	
 	_mkdir_safe(oivtoolsDirectory);
 	
+	char *oivtoolsKeyFilePath = safeStrCat(oivtoolsDirectory, "activation.dat");
+	
 	char productKeyHardcoded[] = "CD87T-HFP4C-V7X7H-8VY68-W7D7M";
 
-	char *productKeyEntered = calloc(sizeof(productKeyHardcoded), 1);
+	FILE *keyFile = fopen(oivtoolsKeyFilePath, "r");
 	
 	// Product is valid for 1 year.
 	struct tm *productActivationLossDateTm = calloc(sizeof(struct tm), 1);
 	productActivationLossDateTm -> tm_mday = 30;
 	productActivationLossDateTm -> tm_mon = 1; // Feb
-	productActivationLossDateTm -> tm_year = 2023 - 1900; // Always subtract 1900 from the actual year.
+	productActivationLossDateTm -> tm_year = 2025 - 1900; // Always subtract 1900 from the actual year.
 	productActivationLossDateTm -> tm_hour = 23;
 	productActivationLossDateTm -> tm_min = 59;
-
-	do
+	
+	if(keyFile == NULL) // Software was not activated yet.
 	{
-		fputs("Please enter your product key below for activation (internet required):\n> ", stdout);
-		fgets(productKeyEntered, sizeof(productKeyHardcoded), stdin);
-		fflush(stdin);
+		char *productKeyEntered = calloc(sizeof(productKeyHardcoded), 1);
 		
-		fputs("\n", stdout);
-		
-		if(equals(productKeyEntered, productKeyHardcoded))
+		do
 		{
-			time_t liveTime = getLiveTime();
+			fputs("Please enter your product key below for activation (internet required):\n> ", stdout);
+			fgets(productKeyEntered, sizeof(productKeyHardcoded), stdin);
+			fflush(stdin);
+			
+			fputs("\n", stdout);
+			
+			if(equals(productKeyEntered, productKeyHardcoded))
+			{
+				time_t liveTime = getLiveTime();
 
-			time_t productActivationLossDate = mktime(productActivationLossDateTm);
-			
-			if(liveTime == -1) // could not fetch the current internet live time (most likely user has no internet or NTP server is down?)
-			{
-				fputs("Activation failed. Please check your internet connection!\n", stdout);
+				time_t productActivationLossDate = mktime(productActivationLossDateTm);
 				
-				continue; // Try to ask for the key again (user needs to establish a internet connection manually before doing again of course).
-			}
-			
-			// See if the product key is still valid.
-			// If invalid, the customer needs to buy a new software with the key together.
-			if(liveTime <= productActivationLossDate)
-			{
-				fputs("Activation successful. Thank you for choosing OIVUnpacker!\n", stdout);
+				if(liveTime == -1) // could not fetch the current internet live time (most likely user has no internet or NTP server is down?)
+				{
+					fputs("Activation failed. Please check your internet connection!\n", stdout);
+					
+					continue; // Try to ask for the key again (user needs to establish a internet connection manually before doing again of course).
+				}
 				
-				// TODO Save product key on HDD for future, so no need to ask again.
-			}
-			else
-			{
-				fputs("Activation failed.\n"
-					  "Your product key has expired (1 year is over).\n"
-					  "Please buy a new licensed software, e.g. write a simple message via Discord.\n"
-					  "The Discord server is: https://discord.gg/tMkHnXVT", stdout);
-			}
-			
-			free(productKeyEntered);
-			productKeyEntered = NULL;
-			
-			free(oivtoolsDirectory);
-			oivtoolsDirectory = NULL;
+				// See if the product key is still valid.
+				// If invalid, the customer needs to buy a new software with the key together.
+				if(liveTime <= productActivationLossDate)
+				{
+					fputs("Activation successful. Thank you for choosing OIVUnpacker!\n", stdout);
+					
+					fprintf(stdout, "Key filepath: %s\n", oivtoolsKeyFilePath);
+					
+					keyFile = fopen(oivtoolsKeyFilePath, "wt"); // Save the key to a file (uncritical as it serves only to remember the entered key => key manipulation in the file will cause corrupt software on startup => delete file in such a case).
+					
+					fputs(productKeyHardcoded, keyFile);
+					
+					fclose(keyFile);
+				}
+				else
+				{
+					fputs("Activation failed.\n"
+						  "Your product key has expired (1 year is over).\n"
+						  "Please buy a new licensed software, e.g. write a simple message via Discord.\n"
+						  "The Discord server is: https://discord.gg/tMkHnXVT", stdout);
+				}
+				
+				free(productKeyEntered);
+				productKeyEntered = NULL;
+				
+				free(oivtoolsDirectory);
+				oivtoolsDirectory = NULL;
 
-			break;
+				break;
+			}
+			
+			fputs("Your product key entered was invalid.\n", stdout);
 		}
-		
-		fputs("Your product key entered was invalid.\n", stdout);
+		while(1);
 	}
-	while(1);
+	else // Software was activated yet.
+	{
+		
+	}
+	
+	free(oivtoolsKeyFilePath);
+	oivtoolsKeyFilePath = NULL;
+	
 
 	char productActivationLossDateFormatted[100];
 	
