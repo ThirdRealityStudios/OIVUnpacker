@@ -11,4 +11,5 @@
 #include <tchar.h>
 
 /// @brief Returns the current time from the internet via NTP.
-time_t getLiveTime();
+/// @param ntpServerIPv4Address The IPv4 address string of the NTP server simply.
+time_t getLiveTime(char *ntpServerIPv4Address);

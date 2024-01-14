@@ -9,7 +9,7 @@
 #include "stringHelper.h"
 #include "xmlHelper.h"
 #include "fileHelper.h"
-#include "list.h"  
+#include "list.h"
 #include "test/stringHelperTest.h"
 #include "test/listTest.h"
 #include "test/directoryHelperTest.h"
@@ -21,8 +21,8 @@
 
 // gcc ./main.c ./list.c ./subroutine.c ./stringHelper.c ./fileHelper.c ./xmlHelper.c ./directoryHelper.c ./reporter.c ./internetHelper.c ./test/stringHelperTest.c ./test/listTest.c ./test/directoryHelperTest.c ./test/xmlHelperTest.c -o main.exe -lws2_32
 
-char *programTitle = "OIV Unpacker for OpenIV";
-char *author = "https://www.youtube.com/@diesunddasDE";
+char *programTitle = "OIV Tools: Unpacker";
+char *author = "https://discord.gg/tMkHnXVT";
 char *assemblyXmlFilename = NULL;
 char *assemblyXmlFilepath = NULL; // <- free() this variable after use later!
 char *contentFolderPath = NULL; // <- same for this variable later!
@@ -46,7 +46,7 @@ void activateProduct(char *localDirectoryPath)
 	char *oivtoolsKeyFilePath = safeStrCat(oivtoolsDirectory, "activation.dat");
 	
 	char productKeyHardcoded[] = "CD87T-HFP4C-V7X7H-8VY68-W7D7M";
-
+	
 	FILE *keyFile = fopen(oivtoolsKeyFilePath, "r");
 	
 	// Product is valid for 1 year.
@@ -58,11 +58,52 @@ void activateProduct(char *localDirectoryPath)
 	productActivationLossDateTm -> tm_min = 59;
 	
 	time_t productActivationLossDate = mktime(productActivationLossDateTm);
-	time_t liveTime = getLiveTime();
+	
+	List *ipv4List = createEmptyList();
+	
+	appendValue(ipv4List, "131.173.16.220");
+	appendValue(ipv4List, "130.149.7.7");
+	appendValue(ipv4List, "131.173.16.220");
+	appendValue(ipv4List, "131.173.16.220");
+
+	time_t liveTime = -1;
+	
+	char *currentIPAddress = NULL;
+	
+	// Use all IPv4 addresses to aquire the current
+	// live time via a NTP server.
+	// This is because there can always be a server down,
+	// or imagine this software is older yet and almost all servers are down.
+	// Hence, it is important to use suitable amount of IP addresses.
+	for(int i = 0; i < sizeOf(ipv4List) && liveTime == -1; i++)
+	{
+		currentIPAddress = getValue(ipv4List, i);
+		
+		liveTime = getLiveTime(currentIPAddress);
+		
+		if(liveTime == -1)
+		{
+			fputc('.', stdout); // illustrate some progress because
+		}					    // could not connect to the NTP server directly..
+		
+		free(currentIPAddress);
+		currentIPAddress = NULL;
+	}
+	
+	if(liveTime == -1)
+	{
+		fputc('\n', stdout);
+		fputc('\n', stdout);
+	}
+	
+	clearList(ipv4List);
+	free(ipv4List);
+	ipv4List = NULL;
 	
 	if(liveTime == -1) // could not fetch the current internet live time (most likely user has no internet or NTP server is down?)
 	{
-		fputs("Activation failed. Please check your internet connection! (Hence, exiting now..)\n", stdout);
+		fputs("Activation or validation of your product license failed.\n"
+			  "Please check your internet connection! (Hence, exiting now..)\n", stdout);
 
 		exit(EXIT_FAILURE);
 	}
@@ -91,14 +132,12 @@ void activateProduct(char *localDirectoryPath)
 			
 			if(equals(productKeyEntered, productKeyHardcoded))
 			{
-				fputs("Activation successful. Thank you for choosing OIVUnpacker!\n", stdout);
-					
-				fprintf(stdout, "Key filepath: %s\n", oivtoolsKeyFilePath);
-					
+				printf("Activation successful. Thank you for choosing %s!\n", programTitle);
+				
 				keyFile = fopen(oivtoolsKeyFilePath, "wt"); // Save the key to a file (uncritical as it serves only to remember the entered key => key manipulation in the file will cause corrupt software on startup => delete file in such a case).
-					
+				
 				fputs(productKeyHardcoded, keyFile);
-					
+				
 				fclose(keyFile);
 				
 				free(productKeyEntered);
@@ -106,7 +145,7 @@ void activateProduct(char *localDirectoryPath)
 				
 				free(oivtoolsDirectory);
 				oivtoolsDirectory = NULL;
-
+				
 				break;
 			}
 			
@@ -119,16 +158,14 @@ void activateProduct(char *localDirectoryPath)
 		char keyReadFromFile[sizeof(productKeyHardcoded)] = {'\0'};
 		fscanf(keyFile, "%s", keyReadFromFile);
 		fclose(keyFile);
-		
-		printf("Could read the following key: %s, length: %d\n", keyReadFromFile, sizeof(productKeyHardcoded));
-		
+
 		// Abort the program if the key was manipulated or for whatever reasons..
 		if(!equals(keyReadFromFile, productKeyHardcoded))
 		{
 			// This issue might appear maybe because of an old installation of the OIVTools,
 			// so delete "activation.dat" in %appdata%/Local/OIVTools/
 			remove(oivtoolsKeyFilePath);
-			
+
 			fputs("Your product key is invalid.\n"
 				  "If you received a new license and this error appears,\n"
 				  "just restart the program (tried to delete files from old installations).\n"
@@ -140,22 +177,21 @@ void activateProduct(char *localDirectoryPath)
 				  "please make sure to provide sufficient screenshots that show the problem briefly.\n"
 				  "Otherwise it might be necessary to start a screenshare in a separate Discord call if screenshots\n"
 				  "do not describe the problem sufficiently (depends on if you want it then, but unnecessary mess can be avoided definitively).\n", stdout);
-			
+
 			exit(EXIT_FAILURE);
 		}
-		
-		puts("Your program is activated!");
+
+		puts("Product status: activated and valid!");
 	}
 	
 	free(oivtoolsKeyFilePath);
 	oivtoolsKeyFilePath = NULL;
 	
-
 	char productActivationLossDateFormatted[100];
 	
-	strftime(productActivationLossDateFormatted, sizeof(productActivationLossDateFormatted), "%d.%m.%Y %H:%M", productActivationLossDateTm);
+	strftime(productActivationLossDateFormatted, sizeof(productActivationLossDateFormatted), "%m/%d/%Y midnight (mm/dd/yyyy)", productActivationLossDateTm);
 	
-	fprintf(stdout, "Your product key is valid until: %s\n", productActivationLossDateFormatted);
+	fprintf(stdout, "Your product key and software is valid until: %s\n", productActivationLossDateFormatted);
 	
 	free(productActivationLossDateTm);
 	productActivationLossDateTm = NULL;
@@ -195,10 +231,10 @@ void preInit()
 void init(int argc, char **argv)
 {
 	argv++;
-	
+
 	oivArchiveFilepath = *argv++;
 	destinationRealPath = *argv;
-	
+
 	oivArchiveFilepath = _fullpath(NULL, oivArchiveFilepath, 0);
 	destinationRealPath = _fullpath(NULL, destinationRealPath, 0);
 
@@ -211,9 +247,9 @@ void init(int argc, char **argv)
 	free(temp);
 	temp = NULL;
 
-	fprintf(stdout, "User name: %s\n", userName);
-	fprintf(stdout, "AppData directory path: %s\n", appdataDirectoryPath);
-	fprintf(stdout, "Local directory path: %s\n", localDirectoryPath);
+	// fprintf(stdout, "User name: %s\n", userName);
+	// fprintf(stdout, "AppData directory path: %s\n", appdataDirectoryPath);
+	// fprintf(stdout, "Local directory path: %s\n", localDirectoryPath);
 }
 
 void testModules()
@@ -236,21 +272,22 @@ int main(int argc, char **argv) // TODO Save activation file in %appdata%/Local/
 	
 	// Example usage: ./main.exe "./Setup 1.oiv" "./myModpack/"
 	
-	activateProduct(localDirectoryPath); // Activation check efore anything else.
-
 	// testModules(); // Only uncomment if there are errors.
-
+	
 	welcomeUser(programTitle, author);
+	
+	activateProduct(localDirectoryPath); // Activation check before use.
+	
 	assertCorrectMainArgs(argc, argv);
 	// From here, it is safe to use main args now as intended.
-
+	
 	init(argc, argv); // do NOT change order! Leave it here after assertCorrectMainArgs(argc, argv) check..
-
+	
 	assertExistingOIVArchive(oivArchiveFilepath);
-
+	
 	// Ignore comment, only relevant for dev
 	// ./7z.exe x -y ./trash/test.oiv -o"C:\Users\Konto\Desktop\OIVReader\trash\"
-
+	
 	char *temp0 = safeStrCat("7z.exe x -y \"", oivArchiveFilepath);
 	char *temp1 = safeStrCat(temp0, "\" -o\"");
 	free(temp0);
@@ -258,18 +295,18 @@ int main(int argc, char **argv) // TODO Save activation file in %appdata%/Local/
 	free(temp1);
 	char *command7zip = safeStrCat(temp0, "\" > NUL:");
 	free(temp0);
-
+	
 	system(command7zip); // Use 7zip to unpack the .oiv archive.
 	free(command7zip);
 	
 	// Check existence of assembly.xml after extracting the .oiv archive.
 	assertExistingAssemblyXml(assemblyXmlFilepath);
-
+	
 	List *exceptSymbols = createEmptyList();
 	appendValue(exceptSymbols, "\n"); // Remove line-breaks
 	appendValue(exceptSymbols, "\t"); // Remove tab-symbols
 	appendValue(exceptSymbols, "\r"); // Remove carriage-returns
-
+	
 	char *assemblyXmlFileContent = readFile(assemblyXmlFilepath, exceptSymbols);
 
 	// Will copy all files of every <archive> tag to their corresponding representative GTA IV folder after unpacking.

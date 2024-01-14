@@ -42,10 +42,9 @@ void assertCorrectMainArgs(int argc, char **argv)
 	if(argc == 3)
 	{
 		argv++;
-			   
-		puts("\nIf there are any read or write access errors,\n"
-		     "please make sure you have elevated rights (!) AND the corresponding\n"
-			 "files and folders DO exist.\n");
+		
+		puts("\nIf there are any errors,\n"
+		     "please make sure you restart your computer and have elevated rights.\n");
 	}
 	else
 	{
@@ -65,9 +64,8 @@ void welcomeUser(char *programTitle, char *author)
 	SetConsoleTitle(programTitle);
 	
 	printf("\n[%s]\n\n"
-		   "If you like the program,\n"
-	       "please subscribe to:\n\n"
-		   "%s\n\n", programTitle, author);
+		   "Discord: %s\n\n",
+	       programTitle, author);
 }
 
 // Helps to remember the decision in function processAddTagXmlString()
