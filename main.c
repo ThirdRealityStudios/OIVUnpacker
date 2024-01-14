@@ -57,6 +57,26 @@ void activateProduct(char *localDirectoryPath)
 	productActivationLossDateTm -> tm_hour = 23;
 	productActivationLossDateTm -> tm_min = 59;
 	
+	time_t productActivationLossDate = mktime(productActivationLossDateTm);
+	time_t liveTime = getLiveTime();
+	
+	if(liveTime == -1) // could not fetch the current internet live time (most likely user has no internet or NTP server is down?)
+	{
+		fputs("Activation failed. Please check your internet connection! (Hence, exiting now..)\n", stdout);
+
+		exit(EXIT_FAILURE);
+	}
+	
+	// See if the product key is still valid (no deep comparison here for the key itself, just checking for expiration which is also hardcoded).
+	// If invalid, the customer needs to buy a new software with the key together.
+	if(liveTime > productActivationLossDate)
+	{
+		fputs("Activation failed.\n"
+			  "Your product key has expired (1 year is over).\n"
+			  "Please get a new licensed software, e.g. write a simple message via Discord.\n"
+			  "The Discord server is: https://discord.gg/tMkHnXVT", stdout);
+	}
+	
 	if(keyFile == NULL) // Software was not activated yet.
 	{
 		char *productKeyEntered = calloc(sizeof(productKeyHardcoded), 1);
@@ -71,38 +91,15 @@ void activateProduct(char *localDirectoryPath)
 			
 			if(equals(productKeyEntered, productKeyHardcoded))
 			{
-				time_t liveTime = getLiveTime();
-
-				time_t productActivationLossDate = mktime(productActivationLossDateTm);
-				
-				if(liveTime == -1) // could not fetch the current internet live time (most likely user has no internet or NTP server is down?)
-				{
-					fputs("Activation failed. Please check your internet connection!\n", stdout);
+				fputs("Activation successful. Thank you for choosing OIVUnpacker!\n", stdout);
 					
-					continue; // Try to ask for the key again (user needs to establish a internet connection manually before doing again of course).
-				}
-				
-				// See if the product key is still valid.
-				// If invalid, the customer needs to buy a new software with the key together.
-				if(liveTime <= productActivationLossDate)
-				{
-					fputs("Activation successful. Thank you for choosing OIVUnpacker!\n", stdout);
+				fprintf(stdout, "Key filepath: %s\n", oivtoolsKeyFilePath);
 					
-					fprintf(stdout, "Key filepath: %s\n", oivtoolsKeyFilePath);
+				keyFile = fopen(oivtoolsKeyFilePath, "wt"); // Save the key to a file (uncritical as it serves only to remember the entered key => key manipulation in the file will cause corrupt software on startup => delete file in such a case).
 					
-					keyFile = fopen(oivtoolsKeyFilePath, "wt"); // Save the key to a file (uncritical as it serves only to remember the entered key => key manipulation in the file will cause corrupt software on startup => delete file in such a case).
+				fputs(productKeyHardcoded, keyFile);
 					
-					fputs(productKeyHardcoded, keyFile);
-					
-					fclose(keyFile);
-				}
-				else
-				{
-					fputs("Activation failed.\n"
-						  "Your product key has expired (1 year is over).\n"
-						  "Please buy a new licensed software, e.g. write a simple message via Discord.\n"
-						  "The Discord server is: https://discord.gg/tMkHnXVT", stdout);
-				}
+				fclose(keyFile);
 				
 				free(productKeyEntered);
 				productKeyEntered = NULL;
@@ -117,9 +114,37 @@ void activateProduct(char *localDirectoryPath)
 		}
 		while(1);
 	}
-	else // Software was activated yet.
+	else // Software was activated yet (does not mean the key in the file is valid! So check that here..).
 	{
+		char keyReadFromFile[sizeof(productKeyHardcoded)] = {'\0'};
+		fscanf(keyFile, "%s", keyReadFromFile);
+		fclose(keyFile);
 		
+		printf("Could read the following key: %s, length: %d\n", keyReadFromFile, sizeof(productKeyHardcoded));
+		
+		// Abort the program if the key was manipulated or for whatever reasons..
+		if(!equals(keyReadFromFile, productKeyHardcoded))
+		{
+			// This issue might appear maybe because of an old installation of the OIVTools,
+			// so delete "activation.dat" in %appdata%/Local/OIVTools/
+			remove(oivtoolsKeyFilePath);
+			
+			fputs("Your product key is invalid.\n"
+				  "If you received a new license and this error appears,\n"
+				  "just restart the program (tried to delete files from old installations).\n"
+				  "If it still doesn't work then anymore,\n"
+				  "do not hesitate to write a message on Discord here in a support channel:\n"
+				  "https://discord.gg/tMkHnXVT\n"
+				  "In such a case we will most likely find a simple solution.\n"
+				  "When writing to the support channel,\n"
+				  "please make sure to provide sufficient screenshots that show the problem briefly.\n"
+				  "Otherwise it might be necessary to start a screenshare in a separate Discord call if screenshots\n"
+				  "do not describe the problem sufficiently (depends on if you want it then, but unnecessary mess can be avoided definitively).\n", stdout);
+			
+			exit(EXIT_FAILURE);
+		}
+		
+		puts("Your program is activated!");
 	}
 	
 	free(oivtoolsKeyFilePath);
